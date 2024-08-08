@@ -7,7 +7,8 @@ const app = express();
 const port = 3000;
 
 // アップロードファイルを保存するディレクトリを作成
-const uploadDir = path.join(__dirname, 'uploads');
+const publicDir = path.join(__dirname, 'public');
+const uploadDir = path.join(publicDir, 'uploads');
 if (!fs.existsSync(uploadDir)) {
   fs.mkdirSync(uploadDir);
 }
@@ -27,8 +28,8 @@ const storage = multer.diskStorage({
 // Multerの設定
 const upload = multer({ storage: storage });
 
-// 静的ファイルの提供（HTMLフォームなど）
-app.use(express.static('public'));
+// 静的ファイルの提供（HTMLフォームやアップロードされた画像など）
+app.use(express.static(publicDir));
 
 // ファイルアップロードのエンドポイント
 app.post('/upload', upload.single('file'), (req, res) => {
@@ -38,6 +39,22 @@ app.post('/upload', upload.single('file'), (req, res) => {
   res.send({
     msg: 'File uploaded successfully',
     file: req.file
+  });
+});
+
+// アップロードされた画像を表示するエンドポイント
+app.get('/uploads/:filename', (req, res) => {
+  const filename = req.params.filename;
+  const filePath = path.join(uploadDir, filename);
+  res.sendFile(filePath);
+});
+// アップロードされた画像の一覧を取得するエンドポイント
+app.get('/uploads', (req, res) => {
+  fs.readdir(uploadDir, (err, files) => {
+    if (err) {
+      return res.status(500).send({ error: 'Failed to list files' });
+    }
+    res.json({ files });
   });
 });
 
